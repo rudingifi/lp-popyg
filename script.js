@@ -98,42 +98,49 @@ async function fetchRSSFeed() {
     }
     
     try {
-        // Using a CORS proxy to handle cross-origin requests
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(RSS_FEED_URL)}`);
-        if (!response.ok) throw new Error('Network response was not ok');
+        // Using RSS to JSON API service
+        const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_FEED_URL)}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const data = await response.json();
+        console.log('RSS Feed Response:', data); // Debug log
         
-        // Parse the XML content
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
-        
-        // Check for parsing errors
-        const parseError = xmlDoc.querySelector('parsererror');
-        if (parseError) throw new Error('Failed to parse RSS feed');
-        
-        // Get all items (articles)
-        const items = xmlDoc.getElementsByTagName('item');
+        if (data.status !== 'ok') {
+            throw new Error('RSS feed service error: ' + data.message);
+        }
         
         // Clear loading state
         articlesSection.innerHTML = '';
         
-        if (items.length === 0) {
+        if (!data.items || data.items.length === 0) {
             articlesSection.appendChild(createErrorState());
             return;
         }
         
         // Process up to 3 latest articles
-        for (let i = 0; i < Math.min(3, items.length); i++) {
-            const item = items[i];
-            const title = item.getElementsByTagName('title')[0].textContent;
-            const link = item.getElementsByTagName('link')[0].textContent;
-            const description = item.getElementsByTagName('description')[0].textContent;
+        for (let i = 0; i < Math.min(3, data.items.length); i++) {
+            const item = data.items[i];
+            console.log('Processing item:', i + 1, item); // Debug log
             
-            // Extract image URL from content if available
-            const content = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
-            const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-            const imageUrl = imgMatch ? imgMatch[1] : 'images/placeholder.png';
+            const title = item.title || 'No Title';
+            const link = item.link || '#';
+            const description = item.description || 'No description available';
+            
+            // Get image URL from thumbnail or content
+            let imageUrl = item.thumbnail || 'images/placeholder.png';
+            
+            // If no thumbnail, try to extract from content
+            if (imageUrl === 'images/placeholder.png' && item.content) {
+                const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
+                if (imgMatch) {
+                    imageUrl = imgMatch[1];
+                }
+            }
+            
+            console.log('Article details:', { title, link, imageUrl }); // Debug log
             
             // Create article card
             const articleCard = document.createElement('div');
@@ -160,7 +167,9 @@ async function fetchRSSFeed() {
     } catch (error) {
         console.error('Error fetching RSS feed:', error);
         articlesSection.innerHTML = '';
-        articlesSection.appendChild(createErrorState());
+        const errorCard = createErrorState();
+        errorCard.querySelector('.error-message p').textContent = `Error: ${error.message}. Please try again later.`;
+        articlesSection.appendChild(errorCard);
     }
 }
 
