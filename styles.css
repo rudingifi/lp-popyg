@@ -23,9 +23,20 @@ header {
     position: fixed;
     top: 0;
     width: 100%;
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     z-index: 1000;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+header.hidden {
+    transform: translateY(-100%);
+}
+
+header.scrolled {
+    background-color: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 nav {
@@ -41,17 +52,35 @@ nav {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--primary-color);
+    transition: color 0.3s ease;
 }
 
 .nav-links a {
     margin-left: 2rem;
     text-decoration: none;
     color: var(--text-color);
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, transform 0.3s ease;
+    position: relative;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
     color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.nav-links a:hover::after {
+    width: 100%;
 }
 
 main {
@@ -260,16 +289,49 @@ h2 {
     display: flex;
     gap: 2rem;
     margin-top: 2rem;
+    flex-wrap: wrap;
 }
 
 .contact-links a {
     color: var(--primary-color);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    background: var(--light-gray);
+}
+
+.contact-links a i {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
 }
 
 .contact-links a:hover {
-    color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.contact-links a:hover i {
+    transform: scale(1.1);
+}
+
+/* Specific styles for different social platforms */
+.contact-links a[href*="github"]:hover {
+    background: #24292e;
+    color: white;
+}
+
+.contact-links a[href*="twitch"]:hover {
+    background: #9146ff;
+    color: white;
+}
+
+.contact-links a[href^="mailto"]:hover {
+    background: #ea4335;
+    color: white;
 }
 
 footer {
@@ -365,6 +427,11 @@ footer {
     .contact-links {
         flex-direction: column;
         gap: 1rem;
+    }
+    
+    .contact-links a {
+        width: 100%;
+        justify-content: center;
     }
 }
 

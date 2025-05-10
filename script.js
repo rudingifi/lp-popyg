@@ -41,17 +41,43 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // Add scroll effect to header
 const header = document.querySelector('header');
 let lastScroll = 0;
+let scrollTimeout;
 
 window.addEventListener('scroll', () => {
     const currentScroll = window.pageYOffset;
     
-    if (currentScroll > lastScroll && currentScroll > 100) {
-        header.style.transform = 'translateY(-100px)';
+    // Add scrolled class when page is scrolled
+    if (currentScroll > 50) {
+        header.classList.add('scrolled');
     } else {
-        header.style.transform = 'translateY(0)';
+        header.classList.remove('scrolled');
     }
     
+    // Hide header when scrolling down, show when scrolling up
+    if (currentScroll > lastScroll && currentScroll > 100) {
+        header.classList.add('hidden');
+    } else {
+        header.classList.remove('hidden');
+    }
+    
+    // Clear the timeout if it exists
+    if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+    }
+    
+    // Set a timeout to show the header when scrolling stops
+    scrollTimeout = setTimeout(() => {
+        header.classList.remove('hidden');
+    }, 1000);
+    
     lastScroll = currentScroll;
+});
+
+// Show header when mouse moves near the top of the page
+document.addEventListener('mousemove', (e) => {
+    if (e.clientY < 50) {
+        header.classList.remove('hidden');
+    }
 });
 
 // RSS Feed URL
