@@ -157,12 +157,15 @@ async function fetchRSSFeed() {
             articlesSection.appendChild(articleCard);
         }
         
-        // Add refresh button
-        const refreshButton = document.createElement('button');
-        refreshButton.className = 'refresh-button';
-        refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Articles';
-        refreshButton.onclick = fetchRSSFeed;
-        articlesSection.parentElement.appendChild(refreshButton);
+        // Add refresh button only if it doesn't exist
+        const existingButton = articlesSection.parentElement.querySelector('.refresh-button');
+        if (!existingButton) {
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-button';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Articles';
+            refreshButton.onclick = fetchRSSFeed;
+            articlesSection.parentElement.appendChild(refreshButton);
+        }
         
     } catch (error) {
         console.error('Error fetching RSS feed:', error);
