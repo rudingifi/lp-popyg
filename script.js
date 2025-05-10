@@ -52,4 +52,120 @@ window.addEventListener('scroll', () => {
     }
     
     lastScroll = currentScroll;
-}); 
+});
+
+// RSS Feed URL
+const RSS_FEED_URL = 'https://popygcom.wordpress.com/feed/';
+
+// Function to create a loading state
+function createLoadingState() {
+    const loadingCard = document.createElement('div');
+    loadingCard.className = 'project-card loading';
+    loadingCard.innerHTML = `
+        <div class="loading-placeholder">
+            <div class="loading-image"></div>
+            <div class="loading-title"></div>
+            <div class="loading-text"></div>
+        </div>
+    `;
+    return loadingCard;
+}
+
+// Function to create an error state
+function createErrorState() {
+    const errorCard = document.createElement('div');
+    errorCard.className = 'project-card error';
+    errorCard.innerHTML = `
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>Unable to load articles. Please try again later.</p>
+            <button onclick="fetchRSSFeed()" class="retry-button">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>
+    `;
+    return errorCard;
+}
+
+// Function to fetch and parse RSS feed
+async function fetchRSSFeed() {
+    const articlesSection = document.querySelector('#projects .project-grid');
+    
+    // Show loading state
+    articlesSection.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+        articlesSection.appendChild(createLoadingState());
+    }
+    
+    try {
+        // Using a CORS proxy to handle cross-origin requests
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(RSS_FEED_URL)}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        
+        // Parse the XML content
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
+        
+        // Check for parsing errors
+        const parseError = xmlDoc.querySelector('parsererror');
+        if (parseError) throw new Error('Failed to parse RSS feed');
+        
+        // Get all items (articles)
+        const items = xmlDoc.getElementsByTagName('item');
+        
+        // Clear loading state
+        articlesSection.innerHTML = '';
+        
+        if (items.length === 0) {
+            articlesSection.appendChild(createErrorState());
+            return;
+        }
+        
+        // Process up to 3 latest articles
+        for (let i = 0; i < Math.min(3, items.length); i++) {
+            const item = items[i];
+            const title = item.getElementsByTagName('title')[0].textContent;
+            const link = item.getElementsByTagName('link')[0].textContent;
+            const description = item.getElementsByTagName('description')[0].textContent;
+            
+            // Extract image URL from content if available
+            const content = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+            const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
+            const imageUrl = imgMatch ? imgMatch[1] : 'images/placeholder.png';
+            
+            // Create article card
+            const articleCard = document.createElement('div');
+            articleCard.className = 'project-card';
+            articleCard.innerHTML = `
+                <div class="card-image">
+                    <img src="${imageUrl}" alt="${title}" onerror="this.src='images/placeholder.png'">
+                </div>
+                <h3>${title}</h3>
+                <p>${description.replace(/<[^>]*>/g, '').substring(0, 200)}...</p>
+                <a href="${link}" class="read-more" target="_blank">Read More <i class="fas fa-arrow-right"></i></a>
+            `;
+            
+            articlesSection.appendChild(articleCard);
+        }
+        
+        // Add refresh button
+        const refreshButton = document.createElement('button');
+        refreshButton.className = 'refresh-button';
+        refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Articles';
+        refreshButton.onclick = fetchRSSFeed;
+        articlesSection.parentElement.appendChild(refreshButton);
+        
+    } catch (error) {
+        console.error('Error fetching RSS feed:', error);
+        articlesSection.innerHTML = '';
+        articlesSection.appendChild(createErrorState());
+    }
+}
+
+// Fetch RSS feed when page loads
+document.addEventListener('DOMContentLoaded', fetchRSSFeed);
+
+// Refresh feed every 30 minutes
+setInterval(fetchRSSFeed, 30 * 60 * 1000); 
